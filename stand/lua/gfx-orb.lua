@@ -30,8 +30,6 @@
 return {
 	logo = {
 		graphic = {
-			
-			
 		    "     \027[m\027[35;2m%\027[m\027[35;1m.\027[m\027[31;1m",
 		    ",//   \027[m\027[35;2m%\027[m\027[35;1m##.\027[m\027[31;1m",
 		    " //(\027[m\027[31;2m((/\027[m\027[35;2m%%\027[m\027[35;1m####\027[m\027[31;1m",
@@ -50,7 +48,7 @@ return {
 		},
 		requires_color = true,
 		shift = {x = 2, y = 3},
-		image = "/boot/images/freebsd-logo-rev.png",
+		image = "/boot/images/potabi-logo.png",
 		image_rl = 15
 	}
 }
