@@ -2,7 +2,7 @@
 
 .include <bsd.init.mk>
 
-FILES+=	freebsd-brand-rev.png freebsd-brand.png freebsd-logo-rev.png
+FILES+=	potabi-brand.png potabi-logo.png
 
 FILESDIR=  /boot/images
 
