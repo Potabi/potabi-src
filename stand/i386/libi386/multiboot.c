@@ -75,7 +75,7 @@ struct file_format multiboot_obj =
 
 extern void multiboot_tramp();
 
-static const char mbl_name[] = "FreeBSD Loader";
+static const char mbl_name[] = "Potabi Loader";
 
 static int
 multiboot_loadfile(char *filename, uint64_t dest,
@@ -261,7 +261,7 @@ multiboot_exec(struct preloaded_file *fp)
 
 	fp = file_findfile(NULL, "elf kernel");
 	if (fp == NULL) {
-		printf("No FreeBSD kernel provided, aborting\n");
+		printf("No Potabi kernel provided, aborting\n");
 		error = EINVAL;
 		goto error;
 	}
