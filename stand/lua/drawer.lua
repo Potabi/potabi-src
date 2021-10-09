@@ -261,7 +261,7 @@ local function drawbox()
 	local y = menu_position.y - 1
 	local w = frame_size.w
 	local menu_header = loader.getenv("loader_menu_title") or
-	    "Welcome to FreeBSD"
+		"Welcome to Potabi!"
 	local menu_header_align = loader.getenv("loader_menu_title_align")
 	local menu_header_x
 
