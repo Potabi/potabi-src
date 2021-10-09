@@ -914,6 +914,35 @@ get_advice(struct file *fp, struct uio *uio)
 	return (ret);
 }
 
+static int
+get_write_ioflag(struct file *fp)
+{
+	int ioflag;
+	struct mount *mp;
+	struct vnode *vp;
+
+	ioflag = 0;
+	vp = fp->f_vnode;
+	mp = atomic_load_ptr(&vp->v_mount);
+
+	if ((fp->f_flag & O_DIRECT) != 0)
+		ioflag |= IO_DIRECT;
+
+	if ((fp->f_flag & O_FSYNC) != 0 ||
+	    (mp != NULL && (mp->mnt_flag & MNT_SYNCHRONOUS) != 0))
+		ioflag |= IO_SYNC;
+
+	/*
+	 * For O_DSYNC we set both IO_SYNC and IO_DATASYNC, so that VOP_WRITE()
+	 * or VOP_DEALLOCATE() implementations that don't understand IO_DATASYNC
+	 * fall back to full O_SYNC behavior.
+	 */
+	if ((fp->f_flag & O_DSYNC) != 0)
+		ioflag |= IO_SYNC | IO_DATASYNC;
+
+	return (ioflag);
+}
+
 int
 vn_read_from_obj(struct vnode *vp, struct uio *uio)
 {
@@ -1113,25 +1142,12 @@ vn_write(struct file *fp, struct uio *uio, struct ucred *active_cred, int flags,
 	if (vp->v_type == VREG)
 		bwillwrite();
 	ioflag = IO_UNIT;
-	if (vp->v_type == VREG && (fp->f_flag & O_APPEND))
+	if (vp->v_type == VREG && (fp->f_flag & O_APPEND) != 0)
 		ioflag |= IO_APPEND;
-	if (fp->f_flag & FNONBLOCK)
+	if ((fp->f_flag & FNONBLOCK) != 0)
 		ioflag |= IO_NDELAY;
-	if (fp->f_flag & O_DIRECT)
-		ioflag |= IO_DIRECT;
+	ioflag |= get_write_ioflag(fp);
 
-	mp = atomic_load_ptr(&vp->v_mount);
-	if ((fp->f_flag & O_FSYNC) ||
-	    (mp != NULL && (mp->mnt_flag & MNT_SYNCHRONOUS)))
-		ioflag |= IO_SYNC;
-
-	/*
-	 * For O_DSYNC we set both IO_SYNC and IO_DATASYNC, so that VOP_WRITE()
-	 * implementations that don't understand IO_DATASYNC fall back to full
-	 * O_SYNC behavior.
-	 */
-	if (fp->f_flag & O_DSYNC)
-		ioflag |= IO_SYNC | IO_DATASYNC;
 	mp = NULL;
 	need_finished_write = false;
 	if (vp->v_type != VCHR) {
@@ -3126,6 +3142,7 @@ vn_generic_copy_file_range(struct vnode *invp, off_t *inoffp,
 	size_t copylen, len, rem, savlen;
 	char *dat;
 	long holein, holeout;
+	struct timespec curts, endts;
 
 	holein = holeout = 0;
 	savlen = len = *lenp;
@@ -3222,7 +3239,15 @@ vn_generic_copy_file_range(struct vnode *invp, off_t *inoffp,
 	 * in the inner loop where the data copying is done.
 	 * Note that some file systems such as NFSv3, NFSv4.0 and NFSv4.1 may
 	 * support holes on the server, but do not support FIOSEEKHOLE.
+	 * The kernel flag COPY_FILE_RANGE_TIMEO1SEC is used to indicate
+	 * that this function should return after 1second with a partial
+	 * completion.
 	 */
+	if ((flags & COPY_FILE_RANGE_TIMEO1SEC) != 0) {
+		getnanouptime(&endts);
+		endts.tv_sec++;
+	} else
+		timespecclear(&endts);
 	holetoeof = eof = false;
 	while (len > 0 && error == 0 && !eof && interrupted == 0) {
 		endoff = 0;			/* To shut up compilers. */
@@ -3291,8 +3316,17 @@ vn_generic_copy_file_range(struct vnode *invp, off_t *inoffp,
 					*inoffp += xfer;
 					*outoffp += xfer;
 					len -= xfer;
-					if (len < savlen)
+					if (len < savlen) {
 						interrupted = sig_intr();
+						if (timespecisset(&endts) &&
+						    interrupted == 0) {
+							getnanouptime(&curts);
+							if (timespeccmp(&curts,
+							    &endts, >=))
+								interrupted =
+								    EINTR;
+						}
+					}
 				}
 			}
 			copylen = MIN(len, endoff - startoff);
@@ -3355,8 +3389,17 @@ vn_generic_copy_file_range(struct vnode *invp, off_t *inoffp,
 					*outoffp += xfer;
 					copylen -= xfer;
 					len -= xfer;
-					if (len < savlen)
+					if (len < savlen) {
 						interrupted = sig_intr();
+						if (timespecisset(&endts) &&
+						    interrupted == 0) {
+							getnanouptime(&curts);
+							if (timespeccmp(&curts,
+							    &endts, >=))
+								interrupted =
+								    EINTR;
+						}
+					}
 				}
 			}
 			xfer = blksize;

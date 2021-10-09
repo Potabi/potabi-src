@@ -254,9 +254,7 @@ set_regs(struct thread *td, struct reg *regs)
 	frame = td->td_frame;
 	frame->tf_sp = regs->sp;
 	frame->tf_lr = regs->lr;
-	frame->tf_elr = regs->elr;
 	frame->tf_spsr &= ~PSR_FLAGS;
-	frame->tf_spsr |= regs->spsr & PSR_FLAGS;
 
 	memcpy(frame->tf_x, regs->x, sizeof(frame->tf_x));
 
@@ -268,9 +266,13 @@ set_regs(struct thread *td, struct reg *regs)
 		 * it put it.
 		 */
 		frame->tf_elr = regs->x[15];
-		frame->tf_spsr = regs->x[16] & PSR_FLAGS;
-	}
+		frame->tf_spsr |= regs->x[16] & PSR_FLAGS;
+	} else
 #endif
+	{
+		frame->tf_elr = regs->elr;
+		frame->tf_spsr |= regs->spsr & PSR_FLAGS;
+	}
 	return (0);
 }
 
@@ -377,7 +379,10 @@ set_dbregs(struct thread *td, struct dbreg *regs)
 		addr = regs->db_breakregs[i].dbr_addr;
 		ctrl = regs->db_breakregs[i].dbr_ctrl;
 
-		/* Don't let the user set a breakpoint on a kernel address. */
+		/*
+		 * Don't let the user set a breakpoint on a kernel or
+		 * non-canonical user address.
+		 */
 		if (addr >= VM_MAXUSER_ADDRESS)
 			return (EINVAL);
 
@@ -412,7 +417,10 @@ set_dbregs(struct thread *td, struct dbreg *regs)
 		addr = regs->db_watchregs[i].dbw_addr;
 		ctrl = regs->db_watchregs[i].dbw_ctrl;
 
-		/* Don't let the user set a watchpoint on a kernel address. */
+		/*
+		 * Don't let the user set a watchpoint on a kernel or
+		 * non-canonical user address.
+		 */
 		if (addr >= VM_MAXUSER_ADDRESS)
 			return (EINVAL);
 
@@ -484,7 +492,8 @@ set_regs32(struct thread *td, struct reg32 *regs)
 	tf->tf_x[13] = regs->r_sp;
 	tf->tf_x[14] = regs->r_lr;
 	tf->tf_elr = regs->r_pc;
-	tf->tf_spsr = regs->r_cpsr;
+	tf->tf_spsr &= ~PSR_FLAGS;
+	tf->tf_spsr |= regs->r_cpsr & PSR_FLAGS;
 
 	return (0);
 }
@@ -925,6 +934,12 @@ init_proc0(vm_offset_t kstack)
 	thread0.td_pcb->pcb_vfpcpu = UINT_MAX;
 	thread0.td_frame = &proc0_tf;
 	pcpup->pc_curpcb = thread0.td_pcb;
+
+	/*
+	 * Unmask SError exceptions. They are used to signal a RAS failure,
+	 * or other hardware error.
+	 */
+	serror_enable();
 }
 
 typedef struct {

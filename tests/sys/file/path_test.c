@@ -757,6 +757,25 @@ ATF_TC_BODY(path_lock, tc)
 	CHECKED_CLOSE(pathfd);
 }
 
+/*
+ * Verify fstatat(AT_EMPTY_PATH) on non-regular dirfd.
+ * Verify that fstatat(AT_EMPTY_PATH) on NULL path returns EFAULT.
+ */
+ATF_TC_WITHOUT_HEAD(path_pipe_fstatat);
+ATF_TC_BODY(path_pipe_fstatat, tc)
+{
+	struct stat sb;
+	int fd[2];
+
+	ATF_REQUIRE_MSG(pipe(fd) == 0, FMT_ERR("pipe"));
+	ATF_REQUIRE_MSG(fstatat(fd[0], "", &sb, AT_EMPTY_PATH) == 0,
+	    FMT_ERR("fstatat pipe"));
+	ATF_REQUIRE_ERRNO(EFAULT, fstatat(fd[0], NULL, &sb,
+	    AT_EMPTY_PATH) == -1);
+	CHECKED_CLOSE(fd[0]);
+	CHECKED_CLOSE(fd[1]);
+}
+
 /* Verify that we can send an O_PATH descriptor over a unix socket. */
 ATF_TC_WITHOUT_HEAD(path_rights);
 ATF_TC_BODY(path_rights, tc)
@@ -846,7 +865,7 @@ ATF_TC_BODY(path_unix, tc)
 	ATF_REQUIRE_MSG(bind(sd, (struct sockaddr *)&sun, SUN_LEN(&sun)) == 0,
 	    FMT_ERR("bind"));
 
-	pathfd = open(path, O_RDONLY);
+	pathfd = open(path, O_PATH);
 	ATF_REQUIRE_ERRNO(EOPNOTSUPP, pathfd < 0);
 
 	CHECKED_CLOSE(sd);
@@ -871,6 +890,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, path_io);
 	ATF_TP_ADD_TC(tp, path_ioctl);
 	ATF_TP_ADD_TC(tp, path_lock);
+	ATF_TP_ADD_TC(tp, path_pipe_fstatat);
 	ATF_TP_ADD_TC(tp, path_rights);
 	ATF_TP_ADD_TC(tp, path_unix);
 
