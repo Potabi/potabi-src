@@ -216,32 +216,34 @@ menu.welcome = {
 	entries = function()
 		local menu_entries = menu.welcome.all_entries
 		local multi_user = menu_entries.multi_user
-		local single_user = menu_entries.single_user
+		-- local single_user = menu_entries.single_user
 		local boot_entry_1, boot_entry_2
 		if core.isSingleUserBoot() then
 			-- Swap the first two menu items on single user boot.
 			-- We'll cache the alternate entries for performance.
 			local alts = menu_entries.alts
 			if alts == nil then
-				single_user = core.deepCopyTable(single_user)
+				-- single_user = core.deepCopyTable(single_user)
 				multi_user = core.deepCopyTable(multi_user)
-				single_user.name = single_user.alternate_name
+				-- single_user.name = single_user.alternate_name
 				multi_user.name = multi_user.alternate_name
 				menu_entries.alts = {
-					single_user = single_user,
+					-- single_user = single_user,
 					multi_user = multi_user,
 				}
 			else
-				single_user = alts.single_user
+				-- single_user = alts.single_user
 				multi_user = alts.multi_user
 			end
-			boot_entry_1, boot_entry_2 = single_user, multi_user
+			-- boot_entry_1, boot_entry_2 = single_user, multi_user
+			boot_entry_1 = multi_user
 		else
-			boot_entry_1, boot_entry_2 = multi_user, single_user
+			-- boot_entry_1, boot_entry_2 = multi_user, single_user
+			boot_entry_1 = multi_user
 		end
 		return {
 			boot_entry_1,
-			boot_entry_2,
+			-- boot_entry_2,
 			menu_entries.prompt,
 			menu_entries.reboot,
 			menu_entries.console,
@@ -262,29 +264,29 @@ menu.welcome = {
 	all_entries = {
 		multi_user = {
 			entry_type = core.MENU_ENTRY,
-			name = color.highlight("B") .. "oot Multi user " ..
+			name = color.highlight(multi_user"B") .. "oot normally" ..
 			    color.highlight("[Enter]"),
 			-- Not a standard menu entry function!
 			alternate_name = color.highlight("B") ..
-			    "oot Multi user",
+			    "oot normally",
 			func = function()
 				core.setSingleUser(false)
 				core.boot()
 			end,
 			alias = {"b", "B"},
 		},
-		single_user = {
-			entry_type = core.MENU_ENTRY,
-			name = "Boot " .. color.highlight("S") .. "ingle user",
-			-- Not a standard menu entry function!
-			alternate_name = "Boot " .. color.highlight("S") ..
-			    "ingle user " .. color.highlight("[Enter]"),
-			func = function()
-				core.setSingleUser(true)
-				core.boot()
-			end,
-			alias = {"s", "S"},
-		},
+		-- single_user = {
+		-- 	entry_type = core.MENU_ENTRY,
+		-- 	name = "Boot " .. color.highlight("S") .. "ingle user",
+		-- 	-- Not a standard menu entry function!
+		-- 	alternate_name = "Boot " .. color.highlight("S") ..
+		-- 	    "ingle user " .. color.highlight("[Enter]"),
+		-- 	func = function()
+		-- 		core.setSingleUser(true)
+		-- 		core.boot()
+		-- 	end,
+		-- 	alias = {"s", "S"},
+		-- },
 		console = {
 			entry_type = core.MENU_ENTRY,
 			name = function()
