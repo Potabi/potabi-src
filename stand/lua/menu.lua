@@ -229,7 +229,7 @@ menu.welcome = {
 				multi_user.name = multi_user.alternate_name
 				menu_entries.alts = {
 					-- single_user = single_user,
-					multi_user = multi_user,
+					multi_user = multi_user
 				}
 			else
 				-- single_user = alts.single_user
