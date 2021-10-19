@@ -264,7 +264,7 @@ menu.welcome = {
 	all_entries = {
 		multi_user = {
 			entry_type = core.MENU_ENTRY,
-			name = color.highlight(multi_user"B") .. "oot normally" ..
+			name = color.highlight("B") .. "oot normally" ..
 			    color.highlight("[Enter]"),
 			-- Not a standard menu entry function!
 			alternate_name = color.highlight("B") ..
