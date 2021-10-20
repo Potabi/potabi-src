@@ -47,7 +47,7 @@ return {
                     "          ##########(\027[m	",
 		},
 		requires_color = true,
-		shift = {x = 1, y = 3},
+		shift = {x = 0, y = 3},
 		image = "/boot/images/potabi-logo.png",
 		image_rl = 15
 	}
