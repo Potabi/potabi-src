@@ -102,7 +102,7 @@ send_flowc_wr(struct toepcb *toep, struct tcpcb *tp)
 		nparams++;
 	if (toep->params.tc_idx != -1) {
 		MPASS(toep->params.tc_idx >= 0 &&
-		    toep->params.tc_idx < sc->chip_params->nsched_cls);
+		    toep->params.tc_idx < sc->params.nsched_cls);
 		nparams++;
 	}
 
@@ -189,7 +189,7 @@ update_tx_rate_limit(struct adapter *sc, struct toepcb *toep, u_int Bps)
 		rc = t4_reserve_cl_rl_kbps(sc, port_id, kbps, &tc_idx);
 		if (rc != 0)
 			return (rc);
-		MPASS(tc_idx >= 0 && tc_idx < sc->chip_params->nsched_cls);
+		MPASS(tc_idx >= 0 && tc_idx < sc->params.nsched_cls);
 	}
 
 	if (toep->params.tc_idx != tc_idx) {
@@ -1849,7 +1849,7 @@ t4_set_tcb_field(struct adapter *sc, struct sge_wrq *wrq, struct toepcb *toep,
 	req->word_cookie = htobe16(V_WORD(word) | V_COOKIE(cookie));
 	req->mask = htobe64(mask);
 	req->val = htobe64(val);
-	if ((wrq->eq.flags & EQ_TYPEMASK) == EQ_OFLD) {
+	if (wrq->eq.type == EQ_OFLD) {
 		txsd = &toep->txsd[toep->txsd_pidx];
 		txsd->tx_credits = howmany(sizeof(*req), 16);
 		txsd->plen = 0;
