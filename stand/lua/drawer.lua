@@ -457,10 +457,10 @@ logodefs = {
 }
 
 brand_position = {x = 2, y = 1}
-logo_position = {x = 46, y = 4}
-menu_position = {x = 5, y = 10}
+logo_position = {x = 45, y = 4}
+menu_position = {x = 2, y = 10}
 frame_size = {w = 42, h = 13}
-default_shift = {x = 2, y = 2}
+default_shift = {x = 1, y = 2}
 shift = default_shift
 
 -- Module exports
